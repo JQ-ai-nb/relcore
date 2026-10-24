@@ -137,3 +137,5 @@ node --test tests/cli.test.mjs
 - PII 扫描：仓库内无姓名、邮箱、绝对路径、token；提交作者均为 `JQ-ai-nb`。
 - `0.2.2` 已发布；CI main #11 与 tag #12 均为 success。
 - 仓库外发现一个他人 Mooncakes 凭据备份文件（文件名含其他账号），未读取、未删除；已在交付说明中提示用户确认后清理。
+
+- `0.2.3`：新增 `Budget { max_rows, max_join_rows }` 与 `BUDGET_EXCEEDED`；28 项 MoonBit + 7 项 CLI + 4 组 SQLite 校验；`examples/plan-budget.json` 退出码 2。
