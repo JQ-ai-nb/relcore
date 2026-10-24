@@ -32,6 +32,8 @@ pub fn eval_expr(Expr, Batch, Int32) -> Value raise EngineError
 
 pub fn execute(Plan) -> ExecResult raise EngineError
 
+pub fn execute_with_budget(Plan, Budget) -> ExecResult raise EngineError
+
 pub fn expr_columns(Expr, Array[String]) -> Unit
 
 pub fn expr_to_string(Expr) -> String
@@ -47,6 +49,8 @@ pub fn run(String) -> String
 pub fn run_markdown(String) -> String
 
 pub fn schema_index(Schema, String) -> Int32?
+
+pub fn unlimited_budget() -> Budget
 
 pub fn value_compare(Value, Value) -> Int32
 
@@ -71,6 +75,11 @@ pub(all) struct AggSpec {
 pub(all) struct Batch {
   schema : Schema
   columns : Array[Column]
+} derive(Eq)
+
+pub(all) struct Budget {
+  max_rows : Int32?
+  max_join_rows : Int32?
 } derive(Eq)
 
 pub(all) struct Column {
