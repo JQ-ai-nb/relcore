@@ -1,0 +1,5 @@
+﻿customer,tenant,name,segment
+7,acme,Alice,enterprise
+8,globex,Bob,smb
+9,initech,Carol,enterprise
+9,acme,Carol Duplicate,enterprise

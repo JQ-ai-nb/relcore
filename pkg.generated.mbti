@@ -1,0 +1,191 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "JQ-ai-nb/relcore"
+
+// Values
+pub fn batch_cell(Batch, Int32, Int32) -> Value raise EngineError
+
+pub fn batch_column_index(Batch, String) -> Int32 raise EngineError
+
+pub fn batch_empty(Schema) -> Batch
+
+pub fn batch_from_rows(Schema, Array[Array[Value]]) -> Batch raise EngineError
+
+pub fn batch_rows(Batch) -> Int32
+
+pub fn batch_take(Batch, Array[Int32]) -> Batch raise EngineError
+
+pub fn cardinality_shape(NodeStat) -> String
+
+pub fn check_contracts(Batch, Array[NodeStat], Array[Contract]) -> Array[Violation]
+
+pub fn check_node_contracts(ExecResult, Array[NodeContract]) -> Array[Violation]
+
+pub fn compare(String) -> String
+
+pub fn csv_records(String) -> Array[Array[String]] raise EngineError
+
+pub fn dtype_name(DataType) -> String
+
+pub fn dtype_of(Value) -> DataType
+
+pub fn eval_expr(Expr, Batch, Int32) -> Value raise EngineError
+
+pub fn execute(Plan) -> ExecResult raise EngineError
+
+pub fn expr_columns(Expr, Array[String]) -> Unit
+
+pub fn expr_to_string(Expr) -> String
+
+pub fn[T] fail(String) -> T raise EngineError
+
+pub fn join_kind_name(JoinKind) -> String
+
+pub fn read_csv(String, String) -> Batch raise EngineError
+
+pub fn run(String) -> String
+
+pub fn run_markdown(String) -> String
+
+pub fn schema_index(Schema, String) -> Int32?
+
+pub fn value_compare(Value, Value) -> Int32
+
+pub fn value_is_null(Value) -> Bool
+
+pub fn value_key(Value) -> String
+
+pub fn value_text(Value) -> String
+
+// Errors
+pub(all) suberror EngineError {
+  EngineError(String)
+}
+
+// Types and methods
+pub(all) struct AggSpec {
+  func : String
+  input : String?
+  out_name : String
+} derive(Eq)
+
+pub(all) struct Batch {
+  schema : Schema
+  columns : Array[Column]
+} derive(Eq)
+
+pub(all) struct Column {
+  values : Array[Value]
+} derive(Eq)
+
+pub(all) enum Contract {
+  RowCount(Int32, Int32)
+  Unique(Array[String])
+  NoNull(Array[String])
+  JoinCardinality(Array[String])
+} derive(Eq)
+
+pub(all) enum DataType {
+  TNull
+  TBool
+  TInt
+  TFloat
+  TText
+} derive(Eq)
+
+pub(all) struct ExecResult {
+  batch : Batch
+  stats : Array[NodeStat]
+  frames : Array[Frame]
+} derive(Eq)
+
+pub(all) enum Expr {
+  Col(String)
+  Lit(Value)
+  Bin(String, Expr, Expr)
+  Not(Expr)
+  IsNull(Expr)
+  Cast(Expr, DataType)
+  Call(String, Array[Expr])
+} derive(Eq)
+
+pub(all) struct Field {
+  name : String
+  dtype : DataType
+  nullable : Bool
+} derive(Eq)
+
+pub(all) struct Frame {
+  label : String
+  batch : Batch
+} derive(Eq)
+
+pub(all) struct JoinEvidence {
+  key : String
+  fanout : Int32
+  left_rows : Array[Int32]
+  right_rows : Array[Int32]
+} derive(Eq)
+
+pub(all) enum JoinKind {
+  Inner
+  Left
+  Right
+  Full
+  Semi
+  Anti
+} derive(Eq)
+
+pub(all) struct NodeContract {
+  at : String?
+  contract : Contract
+} derive(Eq)
+
+pub(all) struct NodeStat {
+  op : String
+  rows_in : Int32
+  rows_out : Int32
+  matched_left : Int32
+  unmatched_left : Int32
+  unmatched_right : Int32
+  max_fanout : Int32
+  left_unique : Bool
+  right_unique : Bool
+  worst_key : String?
+  worst_count : Int32
+  evidence : JoinEvidence?
+} derive(Eq)
+
+pub(all) enum Plan {
+  Scan(Batch)
+  Filter(Expr, Plan)
+  Project(Array[(String, Expr)], Plan)
+  Join(Plan, Plan, Array[String], Array[String], JoinKind)
+  Aggregate(Array[String], Array[AggSpec], Plan)
+  Sort(Array[(String, Bool)], Plan)
+  Limit(Int32, Plan)
+  Union(Plan, Plan)
+  Distinct(Array[String], Plan)
+  Tag(String, Plan)
+}
+
+pub(all) struct Schema {
+  fields : Array[Field]
+} derive(Eq)
+
+pub(all) enum Value {
+  VNull
+  VBool(Bool)
+  VInt(Int64)
+  VFloat(Double)
+  VText(String)
+} derive(Eq)
+
+pub(all) struct Violation {
+  code : String
+  message : String
+  witness : Array[String]
+} derive(Eq)
+
+// Type aliases
+
+// Traits

@@ -1,0 +1,17 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "JQ-ai-nb/relcore/api"
+
+// Values
+pub fn compare(String) -> String
+
+pub fn run(String) -> String
+
+pub fn run_markdown(String) -> String
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits

@@ -1,0 +1,9 @@
+import {
+  "JQ-ai-nb/relcore",
+}
+
+options(
+  link: {
+    "js": { "exports": [ "run", "run_markdown", "compare" ], "format": "esm" },
+  },
+)

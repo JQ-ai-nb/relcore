@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "sources": {
+    "orders": { "format": "csv", "path": "orders.csv" },
+    "customers": { "format": "csv", "path": "customers.csv" }
+  },
+  "plan": {
+    "op": "join",
+    "kind": "inner",
+    "left": { "op": "scan", "source": "orders" },
+    "right": { "op": "scan", "source": "customers" },
+    "left_keys": ["customer"],
+    "right_keys": ["customer"]
+  },
+  "contracts": [
+    { "kind": "join_cardinality", "allowed": ["one_to_one"] }
+  ]
+}
