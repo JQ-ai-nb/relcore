@@ -1,0 +1,5 @@
+import {
+  "JQ-ai-nb/relcore",
+}
+
+pkgtype(kind: "executable")

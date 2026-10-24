@@ -32,10 +32,15 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
       - run: moon version --all
       - run: moon check --target all --deny-warn
       - run: moon test --target all --deny-warn
       - run: moon build --target all --deny-warn
       - run: moon fmt --check
+      - run: moon run examples/embed --deny-warn
       - run: node scripts/build.mjs
       - run: node --test tests/cli.test.mjs
+      - run: python tests/oracle.py
