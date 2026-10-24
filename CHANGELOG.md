@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.2.2 — 2026-10-25
+
+### Added
+
+- `examples/embed`: a consumer that imports the public MoonBit API directly (no JSON plan, no CLI).
+- `tests/oracle.py`: an independent SQLite oracle covering fanout, composite keys, aggregation and plan comparison.
+- `docs/SEMANTICS.md`: NULL, join, cardinality shape, aggregate, union and comparison semantics.
+
+### Fixed
+
+- `sum` over an all-null group now returns `null`, not `0`.
+- `compare` reports `comparable=false` and `row_diff=null` when schemas differ, instead of computing a fake diff.
+
 ## 0.2.1 — 2026-10-25
 
 ### Fixed

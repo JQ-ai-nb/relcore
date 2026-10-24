@@ -1,13 +1,13 @@
 # Relcore
 
 [![CI](https://github.com/JQ-ai-nb/relcore/actions/workflows/ci.yml/badge.svg)](https://github.com/JQ-ai-nb/relcore/actions/workflows/ci.yml)
-[![Mooncakes](https://img.shields.io/badge/mooncakes-0.2.1-blue)](https://mooncakes.io/docs/JQ-ai-nb/relcore)
+[![Mooncakes](https://img.shields.io/badge/mooncakes-0.2.2-blue)](https://mooncakes.io/docs/JQ-ai-nb/relcore)
 
 **把任意表管道编译成可解释、可预算、可验证的执行计划。**
 
 Relcore 是 MoonBit 的**通用关系执行内核**：CSV / JSONL 进来，用同一套 plan IR 表达 `scan → filter → join → aggregate → sort → limit`，执行后每个节点都有精确基数；契约违约时给出可复核的最小行证据。
 
-> **v0.2.1 preview**：从 `JoinWitness`（单点等值关联预检）扩展而来。v0.1 只回答“这一对表 join 会不会扇出”；v0.2 回答“这条管道在哪一步、因为哪个键、扇出了多少行”。  
+> **v0.2.2 preview**：从 `JoinWitness`（单点等值关联预检）扩展而来。v0.1 只回答“这一对表 join 会不会扇出”；v0.2 回答“这条管道在哪一步、因为哪个键、扇出了多少行”。  
 > 对初审意见的逐条回应（改了什么、证据在哪、什么还没做）见 [docs/REJECTION_RESPONSE.md](docs/REJECTION_RESPONSE.md)。
 
 ---
