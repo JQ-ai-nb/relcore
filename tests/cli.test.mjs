@@ -60,3 +60,13 @@ test('plan comparison reports the first diverging stage and row diff',()=>{
   assert.equal(report.first_divergence.baseline_rows,7);
   assert.equal(report.first_divergence.candidate_rows,5);
 });
+
+
+test('budget is a structured error, not a partial result',()=>{
+  const result=run('plan-budget.json');
+  assert.equal(result.status,2);
+  const report=JSON.parse(result.stdout);
+  assert.equal(report.ok,false);
+  assert.equal(report.error.code,'BUDGET_EXCEEDED');
+  assert.match(report.error.message,/join produced/);
+});
