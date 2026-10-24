@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.1 — 2026-10-25
+
+### Fixed
+
+- `moon build --target all` now links the JS facade on native/wasm (executable package type + empty `main`).
+- Added `docs/ACCEPTANCE.md` with reproducible commands and expected numbers.
+
 ## 0.2.0-preview — 2026-10-24
 
 从 `JoinWitness` 的单点等值关联预检，重构为通用关系执行内核。
