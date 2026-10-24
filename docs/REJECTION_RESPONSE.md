@@ -108,7 +108,7 @@
 
 ```sh
 moon check --target all --deny-warn
-moon test --deny-warn                 # 25 项
+moon test --deny-warn                 # 26 项
 node scripts/build.mjs
 node --test tests/cli.test.mjs        # 6 项
 node bin/relcore.mjs examples/plan-tenant-fanout.json --md   # 退出 1

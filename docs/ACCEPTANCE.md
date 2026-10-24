@@ -33,11 +33,25 @@ Coverage includes: CSV inference/BOM/quotes, null keys, sort null placement, emp
 ```sh
 node scripts/build.mjs
 node --test tests/cli.test.mjs
+python tests/oracle.py
 ```
 
-Expected: `# pass 6`, `# fail 0`.
+Expected: `# pass 6`, `# fail 0`, and `oracle: 4 checks passed (fanout, composite-key, revenue, compare)`.
 
-## 4. Three end-to-end examples
+The SQLite oracle is an independent engine check: it computes the same fanout,
+composite-key, aggregation and comparison numbers with `sqlite3`, then compares
+them to the CLI output.
+
+## 4. Library consumer (no JSON, no CLI)
+
+```sh
+moon run examples/embed --deny-warn
+```
+
+Expected: `embed rows=3 violations=0`. This package imports `JQ-ai-nb/relcore`
+and calls `read_csv` / `execute` / `check_contracts` directly.
+
+## 5. Three end-to-end examples
 
 ```sh
 node bin/relcore.mjs examples/plan-tenant-fanout.json --md   # exit 1
@@ -57,7 +71,7 @@ Expected:
 
 Exit codes: `0` contracts pass, `1` contract violation, `2` invalid input / I/O.
 
-## 5. Published package smoke test
+## 6. Published package smoke test
 
 In a clean directory with a clean `MOON_HOME` (no cached `JQ-ai-nb/relcore`):
 
@@ -92,7 +106,7 @@ moon run . --target wasm-gc
 
 Expected: `2`.
 
-## 6. CI matrix
+## 7. CI matrix
 
 `.github/workflows/ci.yml` runs on Ubuntu, macOS and Windows:
 
@@ -100,10 +114,12 @@ Expected: `2`.
 - `moon test --target all --deny-warn`
 - `moon build --target all --deny-warn`
 - `moon fmt --check`
+- `moon run examples/embed --deny-warn`
 - `node scripts/build.mjs`
 - `node --test tests/cli.test.mjs`
+- `python tests/oracle.py`
 
-## 7. What is not covered yet
+## 8. What is not covered yet
 
 - Optimizer (predicate/projection pushdown): plans execute as written.
 - Budget / chunked execution: whole batch is materialized.

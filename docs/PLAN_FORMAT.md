@@ -202,6 +202,7 @@ NULL 语义：算术与比较遇到 `null` 返回 `null`；`and` / `or` 采用�
 {
   "ok": false,
   "schema_match": true,
+  "comparable": true,
   "baseline_rows": 7,
   "candidate_rows": 5,
   "row_diff": { "retained": 5, "lost": 2, "gained": 0 },
@@ -218,6 +219,8 @@ NULL 语义：算术与比较遇到 `null` 返回 `null`；`and` / `or` 采用�
 ```
 
 `first_divergence` 按 `stats` 下标对齐，报告第一个 `rows_out` 不同的阶段；两条计划长度不同时，以较短的一条为基准，再报告长度差异。行对差异按整行多重集计算（`retained` = 两边计数的较小值之和）。
+
+如果两条计划的 schema 不一致，`schema_match=false`、`comparable=false`，`row_diff` 为 `null`——不会拿两套不同的列硬算差异。
 
 ## 错误与退出码
 

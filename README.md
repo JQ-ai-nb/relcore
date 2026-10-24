@@ -1,10 +1,13 @@
 # Relcore
 
+[![CI](https://github.com/JQ-ai-nb/relcore/actions/workflows/ci.yml/badge.svg)](https://github.com/JQ-ai-nb/relcore/actions/workflows/ci.yml)
+[![Mooncakes](https://img.shields.io/badge/mooncakes-0.2.1-blue)](https://mooncakes.io/docs/JQ-ai-nb/relcore)
+
 **把任意表管道编译成可解释、可预算、可验证的执行计划。**
 
 Relcore 是 MoonBit 的**通用关系执行内核**：CSV / JSONL 进来，用同一套 plan IR 表达 `scan → filter → join → aggregate → sort → limit`，执行后每个节点都有精确基数；契约违约时给出可复核的最小行证据。
 
-> **v0.2 preview**：从 `JoinWitness`（单点等值关联预检）扩展而来。v0.1 只回答“这一对表 join 会不会扇出”；v0.2 回答“这条管道在哪一步、因为哪个键、扇出了多少行”。  
+> **v0.2.1 preview**：从 `JoinWitness`（单点等值关联预检）扩展而来。v0.1 只回答“这一对表 join 会不会扇出”；v0.2 回答“这条管道在哪一步、因为哪个键、扇出了多少行”。  
 > 对初审意见的逐条回应（改了什么、证据在哪、什么还没做）见 [docs/REJECTION_RESPONSE.md](docs/REJECTION_RESPONSE.md)。
 
 ---
@@ -152,7 +155,7 @@ node bin/relcore.mjs examples/compare-tenant-keys.json
 | 否 | 是 | `many_to_one` |
 | 否 | 否 | `many_to_many` |
 
-形态描述的是**键的基数关系**，不是业务语义。`orders → customers` 通常是 `many_to_one`，即使 `max_fanout = 1`。
+形态描述的是**键的基数关系**，不是业务语义。`orders → customers` 通常是 `many_to_one`，即使 `max_fanout = 1`。完整的 NULL、join、聚合、union、compare 语义见 [docs/SEMANTICS.md](docs/SEMANTICS.md)。
 
 ---
 
@@ -210,15 +213,19 @@ relcore/
 
 ```sh
 moon check --target all --deny-warn
-moon test --deny-warn                 # 25 项
-moon test --target js --deny-warn     # 25 项
+moon test --deny-warn                 # 26 项
+moon test --target js --deny-warn     # 26 项
 moon fmt --check
+moon run examples/embed --deny-warn   # 库 API 消费者
 node scripts/build.mjs
 node --test tests/cli.test.mjs        # 6 项
+python tests/oracle.py                # 4 组 SQLite 差分校验
 ```
 
-- 25 项 MoonBit 测试：CSV 推断、filter/project、inner/left join、aggregate、union/distinct、JSON 计划、节点契约、join 证据、计划对比、错误路径；
+- 26 项 MoonBit 测试：CSV 推断、filter/project、inner/left join、aggregate、union/distinct、JSON 计划、节点契约、join 证据、计划对比、错误路径；
 - 6 项 CLI 测试：三个示例的退出码、Markdown、缺失文件、计划对比；
+- 4 组 SQLite 差分校验：fanout、组合键、按 segment 聚合、计划对比；
+- `examples/embed` 用公开 MoonBit API（不经过 JSON/CLI）跑同一管道，输出 `rows=3 violations=0`；
 - 所有后端 `moon check --deny-warn` 通过；`moon test` 在 wasm-gc 与 js 上通过；
 - 确定性输出：同一输入产生逐字节相同的 JSON。
 
