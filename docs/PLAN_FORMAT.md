@@ -24,6 +24,7 @@ Relcore 的外部入口是一份 JSON 计划文档。库、CLI、JS 构建共用
 | `sources` | 是 | 命名数据源；`format` 为 `csv` / `jsonl` / `ndjson`，`data` 为文本内容 |
 | `plan` | 是 | 计划根节点 |
 | `contracts` | 否 | 执行后检查的契约列表 |
+| `budget` | 否 | `{ "max_rows": 1000, "max_join_rows": 5000 }`；`null` 或缺省表示不限 |
 
 CLI 额外支持 `"path"` 代替 `"data"`：`bin/relcore.mjs` 会读取文件并注入 `data`，库本身不碰文件系统。
 
@@ -137,6 +138,17 @@ CLI 额外支持 `"path"` 代替 `"data"`：`bin/relcore.mjs` 会读取文件并
 
 NULL 语义：算术与比较遇到 `null` 返回 `null`；`and` / `or` 采用三值逻辑；`filter` 只接受 `true`。
 
+## 预算
+
+```json
+{ "budget": { "max_rows": 1000, "max_join_rows": 5000 } }
+```
+
+- `max_rows`：每个算子输出行数上限；
+- `max_join_rows`：join 输出行数上限，在构建输出列之前检查；
+- 超限返回 `BUDGET_EXCEEDED`，退出码 2，不返回部分结果；
+- 缺省或 `null` 表示不限，没有隐藏上限。
+
 ## 契约
 
 | 契约 | JSON | 语义 |
@@ -228,10 +240,11 @@ NULL 语义：算术与比较遇到 `null` 返回 `null`；`and` / `or` 采用�
 |---|---|
 | `0` | 所有契约通过 |
 | `1` | 执行成功，但存在契约违约 |
-| `2` | 计划无效、源缺失、I/O 失败 |
+| `2` | 计划无效、源缺失、I/O 失败、预算超限 |
 
 错误报告：
 
 ```json
 { "ok": false, "error": { "code": "INVALID_INPUT", "message": "unknown source: missing" } }
+{ "ok": false, "error": { "code": "BUDGET_EXCEEDED", "message": "BUDGET_EXCEEDED: join produced 7 rows, limit 3" } }
 ```

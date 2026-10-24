@@ -68,10 +68,10 @@
 | 计划 | 无 | 逻辑计划 IR + JSON + `tag` |
 | 契约作用域 | 仅 join | 任意 `tag` 节点 + 每个 join 节点 |
 | 调用方式 | CLI | MoonBit 库 / JSON 计划 / CLI / JS |
-| 规模 | 硬上限 1 万行/表写进产品身份 | 单进程内存；预算治理在路线图，不再把上限当身份 |
+| 规模 | 硬上限 1 万行/表写进产品身份 | 单进程内存；预算可配（`max_rows` / `max_join_rows`），超限返回 `BUDGET_EXCEEDED`，不再把上限当身份 |
 | 对比 | 无 | 逐阶段分叉 + 行对差异 |
 
-代码从 2,022 行增长到 2,900 行；公开 API 从 `inspect/counterexample` 扩展到 `execute/check_node_contracts/compare`。
+代码从 2,022 行增长到 3,000 行；公开 API 从 `inspect/counterexample` 扩展到 `execute/check_node_contracts/compare`。
 
 ## 5. “建议参考 pandas、Polars、……”
 
@@ -89,7 +89,7 @@
 | 项 | 状态 | 说明 |
 |---|---|---|
 | 优化器（谓词/投影下推） | 未做 | 计划按书写顺序执行；路线图 10/25 |
-| 预算参数 / 分块 | 未做 | 当前单批次物化；路线图 10/26 |
+| 分块执行 | 未做 | 预算参数已完成；当前仍是单批次物化，分块在路线图 10/26 |
 | Arrow IPC / Parquet | 未做 | 只有 CSV / JSONL；路线图 10/27 |
 | 跨节点最小反例搜索 | 未做 | 当前只对 `max_fanout > 1` 给最小行指针；更一般的 `explain_violation` 在路线图 |
 | SQL AST 前端 | 未做 | plan IR 是数据，未来可由 `sqlparser` AST 生成 |
@@ -108,7 +108,7 @@
 
 ```sh
 moon check --target all --deny-warn
-moon test --deny-warn                 # 26 项
+moon test --deny-warn                 # 28 项
 node scripts/build.mjs
 node --test tests/cli.test.mjs        # 6 项
 node bin/relcore.mjs examples/plan-tenant-fanout.json --md   # 退出 1

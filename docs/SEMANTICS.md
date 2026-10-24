@@ -63,6 +63,14 @@ counts, so they do not change the shape; they still appear in `unmatched_left`.
 - Types are merged: `int64 + float64 → float64`; `null + T → T`; any other
   mismatch is an error. Values are cast to the merged type.
 
+## Budget
+
+- `max_rows` is checked after each operator produces a batch (scan through tag).
+- `max_join_rows` is checked after join pair collection and **before** output columns are built, so a fanout is rejected without materializing the joined schema.
+- A violation raises `BUDGET_EXCEEDED` with the operator and actual/limit rows; the caller gets no partial result.
+- `None` means unlimited; there is no hidden cap.
+- Most checks bound the output size rather than peak memory. Chunked execution is the next step.
+
 ## Plan comparison
 
 - `first_divergence` aligns stages by `stats` index. Plans with different shapes
@@ -76,5 +84,5 @@ counts, so they do not change the shape; they still appear in `unmatched_left`.
 
 - `null` keys are excluded from cardinality shapes; whether that is the right
   product decision is open (Issue #2).
-- No budget parameter yet; a plan is executed in one in-memory batch (Issue #1).
+- A plan is still executed in one in-memory batch; `Budget` bounds output size, not peak memory (Issue #1).
 - `compare` aligns by index, not by tagged node (documented above).

@@ -1,13 +1,13 @@
 # Relcore
 
 [![CI](https://github.com/JQ-ai-nb/relcore/actions/workflows/ci.yml/badge.svg)](https://github.com/JQ-ai-nb/relcore/actions/workflows/ci.yml)
-[![Mooncakes](https://img.shields.io/badge/mooncakes-0.2.2-blue)](https://mooncakes.io/docs/JQ-ai-nb/relcore)
+[![Mooncakes](https://img.shields.io/badge/mooncakes-0.2.3-blue)](https://mooncakes.io/docs/JQ-ai-nb/relcore)
 
 **把任意表管道编译成可解释、可预算、可验证的执行计划。**
 
 Relcore 是 MoonBit 的**通用关系执行内核**：CSV / JSONL 进来，用同一套 plan IR 表达 `scan → filter → join → aggregate → sort → limit`，执行后每个节点都有精确基数；契约违约时给出可复核的最小行证据。
 
-> **v0.2.2 preview**：从 `JoinWitness`（单点等值关联预检）扩展而来。v0.1 只回答“这一对表 join 会不会扇出”；v0.2 回答“这条管道在哪一步、因为哪个键、扇出了多少行”。  
+> **v0.2.3 preview**：从 `JoinWitness`（单点等值关联预检）扩展而来。v0.1 只回答“这一对表 join 会不会扇出”；v0.2 回答“这条管道在哪一步、因为哪个键、扇出了多少行”。  
 > 对初审意见的逐条回应（改了什么、证据在哪、什么还没做）见 [docs/REJECTION_RESPONSE.md](docs/REJECTION_RESPONSE.md)。
 
 ---
@@ -15,7 +15,7 @@ Relcore 是 MoonBit 的**通用关系执行内核**：CSV / JSONL 进来，用�
 ## 60 秒评审路径
 
 1. 读下面三行边界：**不是 DataFrame 门面、不是 SQL 引擎、不是单表校验器**。
-2. 跑 `node bin/relcore.mjs examples/plan-tenant-fanout.json --md`，看到 `max_fanout=2` 和 `left_rows` / `right_rows`。
+2. 跑 `node bin/relcore.mjs examples/plan-tenant-fanout.json --md`，看到 `max_fanout=2` 和 `left_rows` / `right_rows`；再跑 `node bin/relcore.mjs examples/plan-budget.json`，看到结构化 `BUDGET_EXCEEDED`。
 3. 跑 `node bin/relcore.mjs examples/compare-tenant-keys.json`，看到 `first_divergence` 与 `retained/lost/gained`。
 4. 想看实现分层：`docs/ARCHITECTURE.md`；想看与现有项目的关系：`docs/OVERLAP_AUDIT.md`；想看逐条回应：`docs/REJECTION_RESPONSE.md`。
 
@@ -177,7 +177,7 @@ node bin/relcore.mjs examples/compare-tenant-keys.json
 | 算子 | 1（equi-join） | 9，可任意组合 |
 | 计划 | 无 | 逻辑计划 IR + JSON + `tag` |
 | 契约作用域 | 仅 join | 任意 `tag` 节点 + 每个 join 节点 |
-| 规模 | 硬上限 1 万行/表 | 单进程内存，预算治理在路线图 |
+| 规模 | 硬上限 1 万行/表 | 单进程内存；`max_rows` / `max_join_rows` 可配，超限 `BUDGET_EXCEEDED` |
 | 调用方式 | CLI | 库 / CLI / JS |
 | 生态对接 | 无 | CSV / JSONL（Arrow 在路线图） |
 | 计划对比 | 无 | 逐阶段分叉 + 行对差异 |
@@ -222,17 +222,17 @@ relcore/
 
 ```sh
 moon check --target all --deny-warn
-moon test --deny-warn                 # 26 项
-moon test --target js --deny-warn     # 26 项
+moon test --deny-warn                 # 28 项
+moon test --target js --deny-warn     # 28 项
 moon fmt --check
 moon run examples/embed --deny-warn   # 库 API 消费者
 node scripts/build.mjs
-node --test tests/cli.test.mjs        # 6 项
+node --test tests/cli.test.mjs        # 7 项
 python tests/oracle.py                # 4 组 SQLite 差分校验
 ```
 
-- 26 项 MoonBit 测试：CSV 推断、filter/project、inner/left join、aggregate、union/distinct、JSON 计划、节点契约、join 证据、计划对比、错误路径；
-- 6 项 CLI 测试：三个示例的退出码、Markdown、缺失文件、计划对比；
+- 28 项 MoonBit 测试：CSV 推断、filter/project、inner/left join、aggregate、union/distinct、JSON 计划、节点契约、join 证据、计划对比、错误路径；
+- 7 项 CLI 测试：示例退出码、Markdown、缺失文件、计划对比、预算错误；
 - 4 组 SQLite 差分校验：fanout、组合键、按 segment 聚合、计划对比；
 - `examples/embed` 用公开 MoonBit API（不经过 JSON/CLI）跑同一管道，输出 `rows=3 violations=0`；
 - 所有后端 `moon check --deny-warn` 通过；`moon test` 在 wasm-gc 与 js 上通过；
@@ -246,7 +246,7 @@ python tests/oracle.py                # 4 组 SQLite 差分校验
 - **不是分布式引擎**：单进程、内存内执行；跨机调度不在范围内。
 - **不是完整 SQL**：当前入口是 plan IR；SQL 方言适配是后续工作。
 - **不验证业务语义**：契约只检查结构、基数、唯一性、空值；键是否“有意义”由使用者判断。
-- **当前规模**：受宿主内存限制，尚未实现 spill；预算治理在路线图中。
+- **当前规模**：预算通过 `max_rows` / `max_join_rows` 显式配置；受宿主内存限制，尚未实现 spill。
 
 ---
 
@@ -256,7 +256,7 @@ python tests/oracle.py                # 4 组 SQLite 差分校验
 |---|---|
 | 10/24 | 内核骨架、CSV/JSONL、9 算子、4 契约、节点契约、计划对比、CLI（已完成） |
 | 10/25 | 表达式补全、优化器（谓词/投影下推）、`explain()` |
-| 10/26 | 分块执行与预算参数、超预算行为 |
+| 10/26 | 分块执行；预算参数已完成（`BUDGET_EXCEEDED`） |
 | 10/27 | Arrow IPC 只读适配、浏览器工作台 |
 | 10/28 | DuckDB/Polars 差分 oracle、基准 |
 | 10/29 | CI 矩阵、API 文档、发布 Mooncakes |

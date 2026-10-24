@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.2.3 — 2026-10-25
+
+### Added
+
+- Configurable `Budget { max_rows, max_join_rows }`; violations return a structured `BUDGET_EXCEEDED` and never a partial result.
+- `examples/plan-budget.json` and a CLI test for the budget error path.
+- README "60 秒评审路径" and CI/Mooncakes badges.
+
+### Changed
+
+- `docs/SEMANTICS.md` now covers budget behavior; `docs/PLAN_FORMAT.md` documents the `budget` field.
+
 ## 0.2.2 — 2026-10-25
 
 ### Added

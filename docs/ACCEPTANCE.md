@@ -1,4 +1,4 @@
-# Acceptance: how to verify Relcore 0.2.2
+# Acceptance: how to verify Relcore 0.2.3
 
 This page is the shortest reproducible path from a clean clone to the same numbers claimed in the README.
 
@@ -24,7 +24,7 @@ moon test --deny-warn
 moon test --target js --deny-warn
 ```
 
-Expected: `Total tests: 26, passed: 26, failed: 0` on both backends.
+Expected: `Total tests: 28, passed: 28, failed: 0` on both backends.
 
 Coverage includes: CSV inference/BOM/quotes, null keys, sort null placement, empty input, union type widening, join key mismatch, aggregate, distinct, JSON plan, tagged-node contracts, join evidence, plan comparison, error paths.
 
@@ -36,7 +36,7 @@ node --test tests/cli.test.mjs
 python tests/oracle.py
 ```
 
-Expected: `# pass 6`, `# fail 0`, and `oracle: 4 checks passed (fanout, composite-key, revenue, compare)`.
+Expected: `# pass 7`, `# fail 0`, and `oracle: 4 checks passed (fanout, composite-key, revenue, compare)`.
 
 The SQLite oracle is an independent engine check: it computes the same fanout,
 composite-key, aggregation and comparison numbers with `sqlite3`, then compares
@@ -58,6 +58,7 @@ node bin/relcore.mjs examples/plan-tenant-fanout.json --md   # exit 1
 node bin/relcore.mjs examples/plan-tenant-safe.json          # exit 0
 node bin/relcore.mjs examples/plan-revenue-by-segment.json   # exit 0
 node bin/relcore.mjs examples/compare-tenant-keys.json       # exit 1
+node bin/relcore.mjs examples/plan-budget.json             # exit 2, BUDGET_EXCEEDED
 ```
 
 Expected:
@@ -78,7 +79,7 @@ In a clean directory with a clean `MOON_HOME` (no cached `JQ-ai-nb/relcore`):
 ```sh
 moon new relcore-smoke
 cd relcore-smoke
-moon add JQ-ai-nb/relcore@0.2.2
+moon add JQ-ai-nb/relcore@0.2.3
 ```
 
 `moon.pkg`:
