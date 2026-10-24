@@ -12,6 +12,15 @@ Relcore 是 MoonBit 的**通用关系执行内核**：CSV / JSONL 进来，用�
 
 ---
 
+## 60 秒评审路径
+
+1. 读下面三行边界：**不是 DataFrame 门面、不是 SQL 引擎、不是单表校验器**。
+2. 跑 `node bin/relcore.mjs examples/plan-tenant-fanout.json --md`，看到 `max_fanout=2` 和 `left_rows` / `right_rows`。
+3. 跑 `node bin/relcore.mjs examples/compare-tenant-keys.json`，看到 `first_divergence` 与 `retained/lost/gained`。
+4. 想看实现分层：`docs/ARCHITECTURE.md`；想看与现有项目的关系：`docs/OVERLAP_AUDIT.md`；想看逐条回应：`docs/REJECTION_RESPONSE.md`。
+
+---
+
 ## 先看边界：它不是另外三个东西
 
 | 它不是 | 为什么 |
