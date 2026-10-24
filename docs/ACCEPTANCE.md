@@ -24,7 +24,7 @@ moon test --deny-warn
 moon test --target js --deny-warn
 ```
 
-Expected: `Total tests: 25, passed: 25, failed: 0` on both backends.
+Expected: `Total tests: 26, passed: 26, failed: 0` on both backends.
 
 Coverage includes: CSV inference/BOM/quotes, null keys, sort null placement, empty input, union type widening, join key mismatch, aggregate, distinct, JSON plan, tagged-node contracts, join evidence, plan comparison, error paths.
 

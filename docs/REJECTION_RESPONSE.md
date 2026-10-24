@@ -71,7 +71,7 @@
 | 规模 | 硬上限 1 万行/表写进产品身份 | 单进程内存；预算治理在路线图，不再把上限当身份 |
 | 对比 | 无 | 逐阶段分叉 + 行对差异 |
 
-代码从 2,022 行增长到 2,800 行；公开 API 从 `inspect/counterexample` 扩展到 `execute/check_node_contracts/compare`。
+代码从 2,022 行增长到 2,900 行；公开 API 从 `inspect/counterexample` 扩展到 `execute/check_node_contracts/compare`。
 
 ## 5. “建议参考 pandas、Polars、……”
 

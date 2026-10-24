@@ -100,3 +100,33 @@ moon test --target js --deny-warn
 node scripts/build.mjs
 node --test tests/cli.test.mjs
 ```
+
+## Round 6 — 语义回归：全空组 `sum`
+
+**检查**：构造全 null 列的聚合，确认 `sum` 的返回。
+**发现**：`sum` 全空返回 `0`，与 `min/max/avg` 的 `null` 不一致。
+**修改**：`sum` 增加 `seen` 标记，全空返回 `VNull`；新增测试。26 项测试通过。
+
+## Round 7 — 库复用证明
+
+**检查**：README 说“可被依赖”，但此前只有 CLI/JSON 入口被实际使用。
+**发现**：缺少一个不经过 JSON/CLI 的消费者。
+**修改**：新增 `examples/embed`，直接 `read_csv` / `execute` / `check_contracts`；CI 增加 `moon run examples/embed`，输出 `rows=3 violations=0`。
+
+## Round 8 — 独立引擎对照
+
+**检查**：所有断言都来自 Relcore 自己的测试，可能“自洽但错误”。
+**发现**：没有独立 oracle。
+**修改**：新增 `tests/oracle.py`，用 Python 标准库 `sqlite3` 独立计算 fanout、组合键、聚合、对比四组数字，并与 CLI 输出比对；CI 增加 `python tests/oracle.py`。
+
+## Round 9 — 对比的 schema 边界
+
+**检查**：两条计划 schema 不一致时，`compare` 仍然计算 `retained/lost/gained`。
+**发现**：跨 schema 的行身份不可比，输出是“假 diff”。
+**修改**：增加 `comparable` 字段；schema 不一致时 `row_diff=null`。新增断言。
+
+## Round 10 — 发布与声明一致性
+
+**检查**：README / ACCEPTANCE / CHANGELOG / 远端 tag 的版本与测试数。
+**发现**：0.2.1 与 0.2.2 交替，部分文档仍写 25 项 / 2,800 行。
+**修改**：统一为 26 项 MoonBit + 6 项 CLI + 4 组 SQLite 校验、2,900 行；发布 0.2.2；CI main #10 绿。
