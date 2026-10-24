@@ -242,16 +242,22 @@ fn compare_inner(source : String) -> String raise EngineError {
     item["candidate_rows"] = Json::number(candidate.stats.length().to_double())
     first = Some(Json::object(item))
   }
-  let row_diff : Map[String, Json] = Map([])
-  row_diff["retained"] = Json::number(retained.to_double())
-  row_diff["lost"] = Json::number(lost.to_double())
-  row_diff["gained"] = Json::number(gained.to_double())
   let out : Map[String, Json] = Map([])
   out["ok"] = Json::boolean(schema_match && lost == 0 && gained == 0)
   out["schema_match"] = Json::boolean(schema_match)
+  out["comparable"] = Json::boolean(schema_match)
   out["baseline_rows"] = Json::number(base_rows.to_double())
   out["candidate_rows"] = Json::number(cand_rows.to_double())
-  out["row_diff"] = Json::object(row_diff)
+  out["row_diff"] = if schema_match {
+    let row_diff : Map[String, Json] = Map([])
+    row_diff["retained"] = Json::number(retained.to_double())
+    row_diff["lost"] = Json::number(lost.to_double())
+    row_diff["gained"] = Json::number(gained.to_double())
+    Json::object(row_diff)
+  } else {
+    // Row identity is not comparable across schemas; do not report a fake diff.
+    Json::null()
+  }
   out["first_divergence"] = match first {
     Some(value) => value
     None => Json::null()

@@ -94,5 +94,7 @@ test "compare reports a schema mismatch" {
   let document = "{\"version\":1,\"sources\":{\"o\":{\"format\":\"csv\",\"data\":\"id,v\\n1,a\\n\"}},\"baseline\":{\"op\":\"scan\",\"source\":\"o\"},\"candidate\":{\"op\":\"project\",\"columns\":[{\"name\":\"id2\",\"expr\":{\"col\":\"id\"}}],\"input\":{\"op\":\"scan\",\"source\":\"o\"}}}"
   let report = compare(document)
   inspect(report.contains("\"schema_match\":false"), content="true")
+  inspect(report.contains("\"comparable\":false"), content="true")
+  inspect(report.contains("\"row_diff\":null"), content="true")
   inspect(report.contains("\"ok\":false"), content="true")
 }

@@ -449,20 +449,25 @@ fn aggregate_batch(
               let mut int_sum = 0L
               let mut float_sum = 0.0
               let mut is_float = false
+              let mut seen = false
               for row in rows {
                 match input.columns[index].values[row] {
                   VInt(n) => {
+                    seen = true
                     int_sum = int_sum + n
                     float_sum = float_sum + n.to_double()
                   }
                   VFloat(f) => {
+                    seen = true
                     is_float = true
                     float_sum = float_sum + f
                   }
                   _ => ()
                 }
               }
-              if is_float {
+              if !seen {
+                VNull
+              } else if is_float {
                 VFloat(float_sum)
               } else {
                 VInt(int_sum)

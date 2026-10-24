@@ -147,3 +147,16 @@ test "join rejects mismatched key counts" {
   }
   inspect(ok, content="true")
 }
+
+///|
+test "sum over an all-null group is null" {
+  let input = read_csv("k,v\na,\n", "t")
+  let result = execute(
+    Aggregate(
+      ["k"],
+      [{ func: "sum", input: Some("v"), out_name: "s", }],
+      Scan(input),
+    ),
+  )
+  inspect(value_key(result.batch.columns[1].values[0]), content="n:")
+}
