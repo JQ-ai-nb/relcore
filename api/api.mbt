@@ -14,3 +14,10 @@ pub fn run_markdown(source : String) -> String {
 pub fn compare(source : String) -> String {
   @relcore.compare(source)
 }
+
+///|
+/// Native/wasm builds need an entry point when `link` options are present.
+/// The JS facade is the real product; this keeps `moon build --target all` green.
+fn main {
+  ()
+}
