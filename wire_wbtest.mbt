@@ -98,3 +98,18 @@ test "compare reports a schema mismatch" {
   inspect(report.contains("\"row_diff\":null"), content="true")
   inspect(report.contains("\"ok\":false"), content="true")
 }
+
+///|
+test "budget rejects a join before building the output" {
+  let document = "{\"version\":1,\"sources\":{\"orders\":{\"format\":\"csv\",\"data\":\"customer,qty\\n7,1\\n7,2\\n\"},\"customers\":{\"format\":\"csv\",\"data\":\"customer,name\\n7,a\\n7,b\\n\"}},\"budget\":{\"max_join_rows\":3},\"plan\":{\"op\":\"join\",\"kind\":\"inner\",\"left\":{\"op\":\"scan\",\"source\":\"orders\"},\"right\":{\"op\":\"scan\",\"source\":\"customers\"},\"left_keys\":[\"customer\"],\"right_keys\":[\"customer\"]}}"
+  let report = run(document)
+  inspect(report.contains("\"code\":\"BUDGET_EXCEEDED\""), content="true")
+  inspect(report.contains("join produced"), content="true")
+}
+
+///|
+test "budget rejects a scan over max_rows" {
+  let document = "{\"version\":1,\"sources\":{\"orders\":{\"format\":\"csv\",\"data\":\"id\\n1\\n2\\n\"}},\"budget\":{\"max_rows\":1},\"plan\":{\"op\":\"scan\",\"source\":\"orders\"}}"
+  let report = run(document)
+  inspect(report.contains("BUDGET_EXCEEDED"), content="true")
+}

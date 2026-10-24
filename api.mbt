@@ -73,12 +73,43 @@ fn report_json(
 ///|
 fn error_json(message : String) -> String {
   let error : Map[String, Json] = Map([])
-  error["code"] = Json::string("INVALID_INPUT")
+  error["code"] = Json::string(
+    if message.has_prefix("BUDGET_EXCEEDED:") {
+      "BUDGET_EXCEEDED"
+    } else {
+      "INVALID_INPUT"
+    },
+  )
   error["message"] = Json::string(message)
   let fields : Map[String, Json] = Map([])
   fields["ok"] = Json::boolean(false)
   fields["error"] = Json::object(error)
   Json::object(fields).stringify()
+}
+
+///|
+fn optional_int(
+  fields : Map[String, Json],
+  name : String,
+) -> Int32? raise EngineError {
+  match fields.get(name) {
+    Some(Null) | None => None
+    Some(value) => Some(j_int(value, name))
+  }
+}
+
+///|
+fn read_budget(fields : Map[String, Json]) -> Budget raise EngineError {
+  match fields.get("budget") {
+    Some(value) => {
+      let budget = j_obj(value, "budget")
+      {
+        max_rows: optional_int(budget, "max_rows"),
+        max_join_rows: optional_int(budget, "max_join_rows"),
+      }
+    }
+    None => unlimited_budget()
+  }
 }
 
 ///|
@@ -124,11 +155,12 @@ fn evaluate(
   }
   let sources = read_sources(required(fields, "sources"))
   let plan = read_plan(required(fields, "plan"), sources)
+  let budget = read_budget(fields)
   let contracts = match fields.get("contracts") {
     Some(value) => j_array(value, "contracts").map(read_node_contract)
     None => []
   }
-  let result = execute(plan)
+  let result = execute_with_budget(plan, budget)
   let violations = check_node_contracts(result, contracts)
   (result.batch, result.stats, violations)
 }
@@ -193,10 +225,11 @@ fn compare_inner(source : String) -> String raise EngineError {
   }
   let fields = j_obj(document, "compare document")
   let sources = read_sources(required(fields, "sources"))
+  let budget = read_budget(fields)
   let baseline_plan = read_plan(required(fields, "baseline"), sources)
   let candidate_plan = read_plan(required(fields, "candidate"), sources)
-  let baseline = execute(baseline_plan)
-  let candidate = execute(candidate_plan)
+  let baseline = execute_with_budget(baseline_plan, budget)
+  let candidate = execute_with_budget(candidate_plan, budget)
   let base_names = schema_names(baseline.batch)
   let cand_names = schema_names(candidate.batch)
   let schema_match = base_names == cand_names

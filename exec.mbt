@@ -97,6 +97,42 @@ pub(all) struct ExecResult {
 } derive(Eq)
 
 ///|
+/// Explicit, configurable limits. `None` means unlimited; there is no hidden
+/// row cap. A violation is a structured `BUDGET_EXCEEDED` error, never a
+/// partial result.
+pub(all) struct Budget {
+  max_rows : Int32?
+  max_join_rows : Int32?
+} derive(Eq)
+
+///|
+pub fn unlimited_budget() -> Budget {
+  { max_rows: None, max_join_rows: None, }
+}
+
+///|
+fn check_budget(
+  op : String,
+  rows : Int32,
+  budget : Budget,
+) -> Unit raise EngineError {
+  match budget.max_rows {
+    Some(limit) =>
+      if rows > limit {
+        fail(
+          "BUDGET_EXCEEDED: " +
+          op +
+          " produced " +
+          rows.to_string() +
+          " rows, limit " +
+          limit.to_string(),
+        )
+      }
+    None => ()
+  }
+}
+
+///|
 
 ///|
 fn key_of(
@@ -146,6 +182,7 @@ fn join_batches(
   left_keys : Array[String],
   right_keys : Array[String],
   kind : JoinKind,
+  max_join_rows : Int32?,
 ) -> (Batch, NodeStat) raise EngineError {
   if left_keys.length() != right_keys.length() {
     fail("join requires equal numbers of left and right keys")
@@ -280,6 +317,18 @@ fn join_batches(
     }
   }
   let rows_out = left_idx.length()
+  match max_join_rows {
+    Some(limit) =>
+      if rows_out > limit {
+        fail(
+          "BUDGET_EXCEEDED: join produced " +
+          rows_out.to_string() +
+          " rows, limit " +
+          limit.to_string(),
+        )
+      }
+    None => ()
+  }
   let evidence = match worst_key {
     Some(key) =>
       if max_fanout > 1 {
@@ -679,14 +728,18 @@ fn union_batches(left : Batch, right : Batch) -> Batch raise EngineError {
 }
 
 ///|
-pub fn execute(plan : Plan) -> ExecResult raise EngineError {
+pub fn execute_with_budget(
+  plan : Plan,
+  budget : Budget,
+) -> ExecResult raise EngineError {
   match plan {
     Scan(batch) => {
       let rows = batch_rows(batch)
+      check_budget("scan", rows, budget)
       { batch, stats: [plain_stat("scan", rows, rows)], frames: [], }
     }
     Filter(predicate, input) => {
-      let inner = execute(input)
+      let inner = execute_with_budget(input, budget)
       let rows = batch_rows(inner.batch)
       let keep = []
       for row in 0..<rows {
@@ -696,13 +749,15 @@ pub fn execute(plan : Plan) -> ExecResult raise EngineError {
         }
       }
       let batch = batch_take(inner.batch, keep)
+      check_budget("filter", batch_rows(batch), budget)
       let stats = inner.stats.copy()
       stats.push(plain_stat("filter", rows, batch_rows(batch)))
       { batch, stats, frames: inner.frames, }
     }
     Project(columns, input) => {
-      let inner = execute(input)
+      let inner = execute_with_budget(input, budget)
       let batch = project_batch(inner.batch, columns)
+      check_budget("project", batch_rows(batch), budget)
       let stats = inner.stats.copy()
       stats.push(
         plain_stat("project", batch_rows(inner.batch), batch_rows(batch)),
@@ -710,15 +765,17 @@ pub fn execute(plan : Plan) -> ExecResult raise EngineError {
       { batch, stats, frames: inner.frames, }
     }
     Join(left, right, left_keys, right_keys, kind) => {
-      let l = execute(left)
-      let r = execute(right)
+      let l = execute_with_budget(left, budget)
+      let r = execute_with_budget(right, budget)
       let (batch, stat) = join_batches(
         l.batch,
         r.batch,
         left_keys,
         right_keys,
         kind,
+        budget.max_join_rows,
       )
+      check_budget("join", batch_rows(batch), budget)
       let stats = l.stats.copy()
       for item in r.stats {
         stats.push(item)
@@ -731,8 +788,9 @@ pub fn execute(plan : Plan) -> ExecResult raise EngineError {
       { batch, stats, frames, }
     }
     Aggregate(keys, aggs, input) => {
-      let inner = execute(input)
+      let inner = execute_with_budget(input, budget)
       let batch = aggregate_batch(inner.batch, keys, aggs)
+      check_budget("aggregate", batch_rows(batch), budget)
       let stats = inner.stats.copy()
       stats.push(
         plain_stat("aggregate", batch_rows(inner.batch), batch_rows(batch)),
@@ -740,8 +798,9 @@ pub fn execute(plan : Plan) -> ExecResult raise EngineError {
       { batch, stats, frames: inner.frames, }
     }
     Sort(keys, input) => {
-      let inner = execute(input)
+      let inner = execute_with_budget(input, budget)
       let batch = sort_batch(inner.batch, keys)
+      check_budget("sort", batch_rows(batch), budget)
       let stats = inner.stats.copy()
       stats.push(plain_stat("sort", batch_rows(inner.batch), batch_rows(batch)))
       { batch, stats, frames: inner.frames, }
@@ -750,7 +809,7 @@ pub fn execute(plan : Plan) -> ExecResult raise EngineError {
       if n < 0 {
         fail("limit must be non-negative")
       }
-      let inner = execute(input)
+      let inner = execute_with_budget(input, budget)
       let rows = batch_rows(inner.batch)
       let count = if n < rows { n } else { rows }
       let indices = []
@@ -758,14 +817,16 @@ pub fn execute(plan : Plan) -> ExecResult raise EngineError {
         indices.push(i)
       }
       let batch = batch_take(inner.batch, indices)
+      check_budget("limit", batch_rows(batch), budget)
       let stats = inner.stats.copy()
       stats.push(plain_stat("limit", rows, count))
       { batch, stats, frames: inner.frames, }
     }
     Union(left, right) => {
-      let l = execute(left)
-      let r = execute(right)
+      let l = execute_with_budget(left, budget)
+      let r = execute_with_budget(right, budget)
       let batch = union_batches(l.batch, r.batch)
+      check_budget("union", batch_rows(batch), budget)
       let stats = l.stats.copy()
       for item in r.stats {
         stats.push(item)
@@ -784,8 +845,9 @@ pub fn execute(plan : Plan) -> ExecResult raise EngineError {
       { batch, stats, frames, }
     }
     Distinct(keys, input) => {
-      let inner = execute(input)
+      let inner = execute_with_budget(input, budget)
       let batch = distinct_batch(inner.batch, keys)
+      check_budget("distinct", batch_rows(batch), budget)
       let stats = inner.stats.copy()
       stats.push(
         plain_stat("distinct", batch_rows(inner.batch), batch_rows(batch)),
@@ -793,7 +855,8 @@ pub fn execute(plan : Plan) -> ExecResult raise EngineError {
       { batch, stats, frames: inner.frames, }
     }
     Tag(label, input) => {
-      let inner = execute(input)
+      let inner = execute_with_budget(input, budget)
+      check_budget("tag:" + label, batch_rows(inner.batch), budget)
       let stats = inner.stats.copy()
       stats.push(
         plain_stat(
@@ -807,4 +870,9 @@ pub fn execute(plan : Plan) -> ExecResult raise EngineError {
       { batch: inner.batch, stats, frames, }
     }
   }
+}
+
+///|
+pub fn execute(plan : Plan) -> ExecResult raise EngineError {
+  execute_with_budget(plan, unlimited_budget())
 }
