@@ -31,7 +31,7 @@
 }
 ```
 
-这对应“2 条左行 × 2 条右行”的最小复现：去掉任意一条左行或右行，`many_to_many` 就不再成立。
+这对应“2 条左行 × 2 条右行”的最小复现：去掉任意一条左行或右行，`many_to_many` 就不再成立。`unique` / `no_null` 违约还带完整行快照（`row=0 customer=7 name=a`），不用回源文件就能复现。
 
 另外新增 `tag` 计划节点 + `frames`：契约可以用 `"at": "after_join"` 定向检查中间结果，而不是只检查最终结果。找不到 tag 时返回 `UNKNOWN_NODE`，不会静默通过。
 
@@ -108,7 +108,7 @@
 
 ```sh
 moon check --target all --deny-warn
-moon test --deny-warn                 # 32 项
+moon test --deny-warn                 # 33 项
 node scripts/build.mjs
 node --test tests/cli.test.mjs        # 6 项
 node bin/relcore.mjs examples/plan-tenant-fanout.json --md   # 退出 1

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.5 — 2026-10-25
+
+### Changed
+
+- `unique` / `no_null` witnesses now include full row snapshots, not just indices.
+
 ## 0.2.4 — 2026-10-25
 
 ### Added

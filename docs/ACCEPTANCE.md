@@ -1,4 +1,4 @@
-# Acceptance: how to verify Relcore 0.2.4
+# Acceptance: how to verify Relcore 0.2.5
 
 This page is the shortest reproducible path from a clean clone to the same numbers claimed in the README.
 
@@ -80,7 +80,7 @@ In a clean directory with a clean `MOON_HOME` (no cached `JQ-ai-nb/relcore`):
 ```sh
 moon new relcore-smoke
 cd relcore-smoke
-moon add JQ-ai-nb/relcore@0.2.4
+moon add JQ-ai-nb/relcore@0.2.5
 ```
 
 `moon.pkg`:

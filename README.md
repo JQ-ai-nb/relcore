@@ -1,13 +1,13 @@
 # Relcore
 
 [![CI](https://github.com/JQ-ai-nb/relcore/actions/workflows/ci.yml/badge.svg)](https://github.com/JQ-ai-nb/relcore/actions/workflows/ci.yml)
-[![Mooncakes](https://img.shields.io/badge/mooncakes-0.2.4-blue)](https://mooncakes.io/docs/JQ-ai-nb/relcore)
+[![Mooncakes](https://img.shields.io/badge/mooncakes-0.2.5-blue)](https://mooncakes.io/docs/JQ-ai-nb/relcore)
 
 **把任意表管道编译成可解释、可预算、可验证的执行计划。**
 
 Relcore 是 MoonBit 的**通用关系执行内核**：CSV / JSONL 进来，用同一套 plan IR 表达 `scan → filter → join → aggregate → sort → limit`，执行后每个节点都有精确基数；契约违约时给出可复核的最小行证据。
 
-> **v0.2.4 preview**：从 `JoinWitness`（单点等值关联预检）扩展而来。v0.1 只回答“这一对表 join 会不会扇出”；v0.2 回答“这条管道在哪一步、因为哪个键、扇出了多少行”。  
+> **v0.2.5 preview**：从 `JoinWitness`（单点等值关联预检）扩展而来。v0.1 只回答“这一对表 join 会不会扇出”；v0.2 回答“这条管道在哪一步、因为哪个键、扇出了多少行”。  
 > 对初审意见的逐条回应（改了什么、证据在哪、什么还没做）见 [docs/REJECTION_RESPONSE.md](docs/REJECTION_RESPONSE.md)。
 
 ---
@@ -142,7 +142,7 @@ node bin/relcore.mjs examples/compare-tenant-keys.json
 | 计划 | 逻辑计划 IR、JSON 序列化、`tag` 节点、`explain()` 树形输出 | join 谓词拆分、投影裁剪 |
 | 优化 | 常量折叠、filter 下推 project/sort、limit 下推 project | join 谓词拆分、投影裁剪、代价模型 |
 | 契约 | `row_count` / `unique` / `no_null` / `join_cardinality`；可挂在根或 `tag` 节点 | `foreign_key` / `accepted_values` |
-| 证据 | 最坏键、左右行号、fanout、未匹配数 | 自动最小化到最小行集 |
+| 证据 | 最坏键、左右行号、fanout、未匹配数、违约行快照 | 跨节点自动最小化到最小行集 |
 | 对比 | 两条计划逐阶段对比 + retained/lost/gained | 多候选对比、回归基线库 |
 | 接口 | MoonBit 库、JSON 计划、Node CLI、JS 构建 | 浏览器工作台、SQL AST 适配 |
 
@@ -224,8 +224,8 @@ relcore/
 
 ```sh
 moon check --target all --deny-warn
-moon test --deny-warn                 # 32 项
-moon test --target js --deny-warn     # 32 项
+moon test --deny-warn                 # 33 项
+moon test --target js --deny-warn     # 33 项
 moon fmt --check
 moon run examples/embed --deny-warn   # 库 API 消费者
 node scripts/build.mjs
@@ -233,7 +233,7 @@ node --test tests/cli.test.mjs        # 8 项
 python tests/oracle.py                # 4 组 SQLite 差分校验
 ```
 
-- 32 项 MoonBit 测试：CSV 推断、filter/project、inner/left join、aggregate、union/distinct、JSON 计划、节点契约、join 证据、计划对比、错误路径；
+- 33 项 MoonBit 测试：CSV 推断、filter/project、inner/left join、aggregate、union/distinct、JSON 计划、节点契约、join 证据、计划对比、错误路径；
 - 8 项 CLI 测试：示例退出码、Markdown、缺失文件、计划对比、预算错误、explain；
 - 4 组 SQLite 差分校验：fanout、组合键、按 segment 聚合、计划对比；
 - `examples/embed` 用公开 MoonBit API（不经过 JSON/CLI）跑同一管道，输出 `rows=3 violations=0`；
