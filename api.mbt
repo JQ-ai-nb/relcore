@@ -113,6 +113,14 @@ fn read_budget(fields : Map[String, Json]) -> Budget raise EngineError {
 }
 
 ///|
+fn should_optimize(fields : Map[String, Json]) -> Bool raise EngineError {
+  match fields.get("optimize") {
+    Some(value) => j_bool(value, "optimize")
+    None => true
+  }
+}
+
+///|
 fn read_sources(value : Json) -> Map[String, Batch] raise EngineError {
   let fields = j_obj(value, "sources")
   let out : Map[String, Batch] = Map([])
@@ -155,6 +163,7 @@ fn evaluate(
   }
   let sources = read_sources(required(fields, "sources"))
   let plan = read_plan(required(fields, "plan"), sources)
+  let plan = if should_optimize(fields) { optimize(plan) } else { plan }
   let budget = read_budget(fields)
   let contracts = match fields.get("contracts") {
     Some(value) => j_array(value, "contracts").map(read_node_contract)
@@ -226,8 +235,19 @@ fn compare_inner(source : String) -> String raise EngineError {
   let fields = j_obj(document, "compare document")
   let sources = read_sources(required(fields, "sources"))
   let budget = read_budget(fields)
+  let optimize_enabled = should_optimize(fields)
   let baseline_plan = read_plan(required(fields, "baseline"), sources)
   let candidate_plan = read_plan(required(fields, "candidate"), sources)
+  let baseline_plan = if optimize_enabled {
+    optimize(baseline_plan)
+  } else {
+    baseline_plan
+  }
+  let candidate_plan = if optimize_enabled {
+    optimize(candidate_plan)
+  } else {
+    candidate_plan
+  }
   let baseline = execute_with_budget(baseline_plan, budget)
   let candidate = execute_with_budget(candidate_plan, budget)
   let base_names = schema_names(baseline.batch)
@@ -306,6 +326,31 @@ fn compare_inner(source : String) -> String raise EngineError {
 pub fn compare(source : String) -> String {
   compare_inner(source) catch {
     EngineError(message) => error_json(message)
+  }
+}
+
+///|
+fn explain_inner(source : String) -> String raise EngineError {
+  let document = @json.parse(
+    source,
+    max_nesting_depth=64,
+    reject_duplicate_keys=true,
+    preserve_number_repr=true,
+  ) catch {
+    _ => fail("plan document is not valid JSON")
+  }
+  let fields = j_obj(document, "plan document")
+  let sources = read_sources(required(fields, "sources"))
+  let plan = read_plan(required(fields, "plan"), sources)
+  let plan = if should_optimize(fields) { optimize(plan) } else { plan }
+  plan_to_string(plan)
+}
+
+///|
+/// Show the optimized logical plan without executing it.
+pub fn explain(source : String) -> String {
+  explain_inner(source) catch {
+    EngineError(message) => "error: " + message
   }
 }
 

@@ -6,6 +6,9 @@ pkgtype(kind: "executable")
 
 options(
   link: {
-    "js": { "exports": [ "run", "run_markdown", "compare" ], "format": "esm" },
+    "js": {
+      "exports": [ "run", "run_markdown", "compare", "explain" ],
+      "format": "esm",
+    },
   },
 )

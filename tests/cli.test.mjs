@@ -70,3 +70,10 @@ test('budget is a structured error, not a partial result',()=>{
   assert.equal(report.error.code,'BUDGET_EXCEEDED');
   assert.match(report.error.message,/join produced/);
 });
+
+
+test('explain prints the optimized plan',()=>{
+  const result=run('plan-revenue-by-segment.json',['--explain']);
+  assert.equal(result.status,0);
+  assert.match(result.stdout,/(aggregate|join|scan)/);
+});

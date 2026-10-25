@@ -113,3 +113,11 @@ test "budget rejects a scan over max_rows" {
   let report = run(document)
   inspect(report.contains("BUDGET_EXCEEDED"), content="true")
 }
+
+///|
+test "explain prints the optimized plan" {
+  let document = "{\"version\":1,\"sources\":{\"orders\":{\"format\":\"csv\",\"data\":\"id,qty\\n1,2\\n\"}},\"plan\":{\"op\":\"filter\",\"predicate\":{\"op\":\">\",\"left\":{\"col\":\"qty\"},\"right\":{\"lit\":1}},\"input\":{\"op\":\"project\",\"columns\":[{\"name\":\"id\",\"expr\":{\"col\":\"id\"}},{\"name\":\"qty\",\"expr\":{\"col\":\"qty\"}}],\"input\":{\"op\":\"scan\",\"source\":\"orders\"}}}}"
+  let text = explain(document)
+  inspect(text.contains("project"), content="true")
+  inspect(text.contains("filter"), content="true")
+}

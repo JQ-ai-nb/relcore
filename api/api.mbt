@@ -21,3 +21,8 @@ pub fn compare(source : String) -> String {
 fn main {
   ()
 }
+
+///|
+pub fn explain(source : String) -> String {
+  @relcore.explain(source)
+}

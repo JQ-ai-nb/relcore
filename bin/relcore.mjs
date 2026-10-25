@@ -2,11 +2,12 @@
 import {readFileSync,statSync} from 'node:fs';
 import {resolve,dirname} from 'node:path';
 
-const usage='Usage: node bin/relcore.mjs <plan.json> [--md]\nExit: 0 contracts pass; 1 contract violations; 2 invalid input or I/O.';
+const usage='Usage: node bin/relcore.mjs <plan.json> [--md|--explain]\nExit: 0 contracts pass; 1 contract violations; 2 invalid input or I/O.';
 const args=process.argv.slice(2);
 if(args.length===1&&['-h','--help'].includes(args[0])){console.log(usage);process.exit(0);}
 const markdown=args.includes('--md');
-const planArgs=args.filter(arg=>arg!=='--md');
+const explain=args.includes('--explain');
+const planArgs=args.filter(arg=>arg!=='--md'&&arg!=='--explain');
 if(planArgs.length!==1){console.error(usage);process.exit(2);}
 
 try{
@@ -22,7 +23,11 @@ try{
   }
   const core=await import('../dist/relcore.js');
   const documentText=JSON.stringify(document);
-  if(document.baseline&&document.candidate){
+  if(explain){
+    const raw=core.explain(documentText);
+    console.log(raw);
+    process.exitCode=raw.startsWith('error:')?2:0;
+  }else if(document.baseline&&document.candidate){
     const raw=core.compare(documentText);
     console.log(raw);
     const parsed=JSON.parse(raw);

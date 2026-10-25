@@ -160,3 +160,34 @@ test "sum over an all-null group is null" {
   )
   inspect(value_key(result.batch.columns[1].values[0]), content="n:")
 }
+
+///|
+test "optimizer pushes a filter below a project" {
+  let input = read_csv("id,qty\n1,2\n2,0\n", "t")
+  let plan = Filter(
+    Bin(">", Col("qty"), Lit(VInt(1L))),
+    Project([("id", Col("id")), ("qty", Col("qty"))], Scan(input)),
+  )
+  let optimized = optimize(plan)
+  let text = plan_to_string(optimized)
+  inspect(text.has_prefix("project"), content="true")
+  inspect(text.contains("filter"), content="true")
+  inspect(batch_rows(execute(optimized).batch), content="1")
+}
+
+///|
+test "optimizer folds constant predicates" {
+  let input = read_csv("id\n1\n", "t")
+  let plan = Filter(Bin(">", Lit(VInt(2L)), Lit(VInt(1L))), Scan(input))
+  let text = plan_to_string(optimize(plan))
+  inspect(text.contains("'true'"), content="true")
+}
+
+///|
+test "optimizer pushes a limit below a project" {
+  let input = read_csv("id\n1\n2\n", "t")
+  let plan = Limit(1, Project([("id", Col("id"))], Scan(input)))
+  let text = plan_to_string(optimize(plan))
+  inspect(text.has_prefix("project"), content="true")
+  inspect(text.contains("limit 1"), content="true")
+}
