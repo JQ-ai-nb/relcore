@@ -25,6 +25,7 @@ Relcore 的外部入口是一份 JSON 计划文档。库、CLI、JS 构建共用
 | `plan` | 是 | 计划根节点 |
 | `contracts` | 否 | 执行后检查的契约列表 |
 | `budget` | 否 | `{ "max_rows": 1000, "max_join_rows": 5000 }`；`null` 或缺省表示不限 |
+| `optimize` | 否 | 默认 `true`；设为 `false` 时按书写顺序执行，便于对比 |
 
 CLI 额外支持 `"path"` 代替 `"data"`：`bin/relcore.mjs` 会读取文件并注入 `data`，库本身不碰文件系统。
 
@@ -137,6 +138,34 @@ CLI 额外支持 `"path"` 代替 `"data"`：`bin/relcore.mjs` 会读取文件并
 | 函数 | `{ "call": "lower", "args": [...] }` | `lower` / `upper` / `len` / `coalesce` |
 
 NULL 语义：算术与比较遇到 `null` 返回 `null`；`and` / `or` 采用三值逻辑；`filter` 只接受 `true`。
+
+## 优化与 explain
+
+默认执行前会跑保守优化器：
+
+- 常量折叠；
+- `filter` 下推 `project`（仅当谓词引用的列都是直接列别名）；
+- `filter` 下推 `sort`；
+- 相邻 `filter` 合并；
+- `limit` 下推 `project`，嵌套 `limit` 取较小值。
+
+不做 join 重排、join 谓词拆分、投影裁剪或代价模型。`"optimize": false` 可关闭。
+
+```sh
+node bin/relcore.mjs plan.json --explain
+```
+
+输出优化后的计划树，例如：
+
+```text
+limit 5
+  sort [revenue desc]
+    aggregate [segment] sum->revenue, count->orders
+      join inner on [customer, tenant] -> [customer, tenant]
+        filter (amount > '10')
+          scan rows=5
+        scan rows=4
+```
 
 ## 预算
 

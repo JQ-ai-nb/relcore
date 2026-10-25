@@ -139,3 +139,4 @@ node --test tests/cli.test.mjs
 - 仓库外发现一个他人 Mooncakes 凭据备份文件（文件名含其他账号），未读取、未删除；已在交付说明中提示用户确认后清理。
 
 - `0.2.3`：新增 `Budget { max_rows, max_join_rows }` 与 `BUDGET_EXCEEDED`；28 项 MoonBit + 7 项 CLI + 4 组 SQLite 校验；`examples/plan-budget.json` 退出码 2。
+- `0.2.4`：保守优化器（常量折叠/filter/limit 下推）与 `explain`；32 项 MoonBit + 8 项 CLI + 4 组 SQLite。

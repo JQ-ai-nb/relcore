@@ -63,6 +63,22 @@ counts, so they do not change the shape; they still appear in `unmatched_left`.
 - Types are merged: `int64 + float64 → float64`; `null + T → T`; any other
   mismatch is an error. Values are cast to the merged type.
 
+## Optimizer
+
+`run` and `compare` optimize by default; `"optimize": false` disables it.
+
+Rules (all semantics-preserving, applied to a fixed point with local checks):
+
+- constant folding on literal expressions;
+- `filter` pushdown through `project` (only when every referenced output column is a direct column alias);
+- `filter` pushdown through `sort`;
+- adjacent `filter` merged with `and`;
+- `limit` pushdown through `project`; nested limits collapse to the smaller one.
+
+It does **not** reorder joins, split join predicates, prune projections, or use
+statistics. `explain` prints the optimized plan; `--explain` in the CLI is the
+same code path.
+
 ## Budget
 
 - `max_rows` is checked after each operator produces a batch (scan through tag).

@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.2.4 — 2026-10-25
+
+### Added
+
+- Conservative optimizer: constant folding, filter pushdown through project/sort, filter merging, limit pushdown through project.
+- `explain(source)` and `node bin/relcore.mjs plan.json --explain`.
+- Optimizer tests (equivalence and plan-shape) plus a CLI explain test.
+
+### Changed
+
+- `run` / `compare` optimize by default; `"optimize": false` disables it.
+
 ## 0.2.3 — 2026-10-25
 
 ### Added

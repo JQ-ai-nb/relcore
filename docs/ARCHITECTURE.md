@@ -7,6 +7,8 @@ frontends        MoonBit API        JSON plan        CLI (Node)        JS/WASM
                                         ↓
 logical plan     Scan · Filter · Project · Join · Aggregate · Sort · Limit · Union · Distinct
                                         ↓
+optimizer        constant folding · filter pushdown (project/sort) · limit pushdown (project)
+                                        ↓
 executor         column-major Batch → operator → Batch + NodeStat
                                         ↓
 contracts        row_count · unique · no_null · join_cardinality
@@ -168,7 +170,7 @@ join 违约时，`NodeStat.evidence` 保存最小行指针：
 ## 已知取舍
 
 1. **`Array[Value]` 不是紧凑列存**：实现简单、跨后端一致，但内存开销高于 typed buffer。
-2. **无优化器**：计划按书写顺序执行，谓词/投影下推尚未实现。
+2. **保守优化器**：不做 join 谓词拆分、投影裁剪、代价模型；规则不能证明安全时保持原计划。
 3. **无 chunk**：整个批次一次物化，大输入会受宿主内存限制。
 4. **join 键编码是字符串**：正确性优先，后续可换成 typed hash。
 5. **`count` / `sum` 在空组上的行为**：当前返回 0 或 `null`，与 SQL 的细节差异记录在测试里。
