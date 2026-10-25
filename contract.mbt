@@ -22,8 +22,16 @@ pub(all) struct Violation {
 } derive(Eq)
 
 ///|
-fn witness_row(row : Int32, column : String, value : Value) -> String {
-  "row=" + row.to_string() + " column=" + column + " value=" + value_text(value)
+
+///|
+/// A full row snapshot makes a violation reproducible without re-opening the
+/// source. Indices alone are cheap but not self-contained.
+fn row_snapshot(batch : Batch, row : Int32) -> String {
+  let parts = []
+  for i, field in batch.schema.fields {
+    parts.push(field.name + "=" + value_text(batch.columns[i].values[row]))
+  }
+  "row=" + row.to_string() + " " + parts.join(" ")
 }
 
 ///|
@@ -57,9 +65,9 @@ fn check_unique(
           rows.push(row)
           if !reported.contains(key) && reported.length() < 5 {
             reported[key] = true
-            let witness = []
+            let witness = ["column=" + column + " value=" + value_text(value)]
             for duplicate in rows {
-              witness.push(witness_row(duplicate, column, value))
+              witness.push(row_snapshot(batch, duplicate))
             }
             out.push({
               code: "DUPLICATE_KEY",
@@ -95,7 +103,7 @@ fn check_no_null(
     let witness = []
     for row in 0..<batch.columns[index].values.length() {
       if value_is_null(batch.columns[index].values[row]) && witness.length() < 5 {
-        witness.push(witness_row(row, column, VNull))
+        witness.push(row_snapshot(batch, row) + " column=" + column)
       }
     }
     if witness.length() > 0 {

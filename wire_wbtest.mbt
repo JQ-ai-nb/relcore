@@ -121,3 +121,11 @@ test "explain prints the optimized plan" {
   inspect(text.contains("project"), content="true")
   inspect(text.contains("filter"), content="true")
 }
+
+///|
+test "duplicate key witness includes a full row snapshot" {
+  let document = "{\"version\":1,\"sources\":{\"orders\":{\"format\":\"csv\",\"data\":\"customer,name\\n7,a\\n7,b\\n\"}},\"plan\":{\"op\":\"scan\",\"source\":\"orders\"},\"contracts\":[{\"kind\":\"unique\",\"columns\":[\"customer\"]}]}"
+  let report = run(document)
+  inspect(report.contains("row=0 customer=7 name=a"), content="true")
+  inspect(report.contains("row=1 customer=7 name=b"), content="true")
+}
