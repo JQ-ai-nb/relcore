@@ -4,6 +4,8 @@ package "JQ-ai-nb/relcore/api"
 // Values
 pub fn compare(String) -> String
 
+pub fn explain(String) -> String
+
 pub fn run(String) -> String
 
 pub fn run_markdown(String) -> String

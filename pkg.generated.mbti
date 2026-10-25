@@ -34,6 +34,8 @@ pub fn execute(Plan) -> ExecResult raise EngineError
 
 pub fn execute_with_budget(Plan, Budget) -> ExecResult raise EngineError
 
+pub fn explain(String) -> String
+
 pub fn expr_columns(Expr, Array[String]) -> Unit
 
 pub fn expr_to_string(Expr) -> String
@@ -41,6 +43,10 @@ pub fn expr_to_string(Expr) -> String
 pub fn[T] fail(String) -> T raise EngineError
 
 pub fn join_kind_name(JoinKind) -> String
+
+pub fn optimize(Plan) -> Plan
+
+pub fn plan_to_string(Plan) -> String
 
 pub fn read_csv(String, String) -> Batch raise EngineError
 
