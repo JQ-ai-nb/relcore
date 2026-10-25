@@ -1,4 +1,4 @@
-# Acceptance: how to verify Relcore 0.2.5
+# Acceptance: how to verify Relcore 0.2.6
 
 This page is the shortest reproducible path from a clean clone to the same numbers claimed in the README.
 
@@ -24,7 +24,7 @@ moon test --deny-warn
 moon test --target js --deny-warn
 ```
 
-Expected: `Total tests: 32, passed: 32, failed: 0` on both backends.
+Expected: `Total tests: 33, passed: 33, failed: 0` on both backends.
 
 Coverage includes: CSV inference/BOM/quotes, null keys, sort null placement, empty input, union type widening, join key mismatch, aggregate, distinct, JSON plan, tagged-node contracts, join evidence, plan comparison, error paths.
 
@@ -36,7 +36,7 @@ node --test tests/cli.test.mjs
 python tests/oracle.py
 ```
 
-Expected: `# pass 8`, `# fail 0`, and `oracle: 4 checks passed (fanout, composite-key, revenue, compare)`.
+Expected: `# pass 9`, `# fail 0`, and `oracle: 4 checks passed (fanout, composite-key, revenue, compare)`.
 
 The SQLite oracle is an independent engine check: it computes the same fanout,
 composite-key, aggregation and comparison numbers with `sqlite3`, then compares
@@ -60,6 +60,8 @@ node bin/relcore.mjs examples/plan-revenue-by-segment.json   # exit 0
 node bin/relcore.mjs examples/compare-tenant-keys.json       # exit 1
 node bin/relcore.mjs examples/plan-budget.json             # exit 2, BUDGET_EXCEEDED
 node bin/relcore.mjs examples/plan-revenue-by-segment.json --explain  # exit 0, optimized plan
+node bin/relcore.mjs examples/plan-edge-check.json            # exit 0, local validation
+node examples/edge-check.mjs                                  # exit 0, inline data, no network
 ```
 
 Expected:
@@ -70,6 +72,8 @@ Expected:
 | tenant-safe | 0 | `rows=5`, `max_fanout=1` |
 | revenue-by-segment | 0 | `rows=2`, columns `segment/revenue/orders` |
 | compare-tenant-keys | 1 | `retained=5`, `lost=2`, `gained=0`, first divergence at index 2 |
+| plan-edge-check | 0 | `rows=4`, 0 violations; the same plan mounted with inline data |
+| edge-check.mjs | 0 | `source_rows_in_payload=false`, `source_sha256` printed |
 
 Exit codes: `0` contracts pass, `1` contract violation, `2` invalid input / I/O.
 
@@ -80,7 +84,7 @@ In a clean directory with a clean `MOON_HOME` (no cached `JQ-ai-nb/relcore`):
 ```sh
 moon new relcore-smoke
 cd relcore-smoke
-moon add JQ-ai-nb/relcore@0.2.5
+moon add JQ-ai-nb/relcore@0.2.6
 ```
 
 `moon.pkg`:
@@ -119,14 +123,17 @@ Expected: `2`.
 - `moon run examples/embed --deny-warn`
 - `node scripts/build.mjs`
 - `node --test tests/cli.test.mjs`
+- `node examples/edge-check.mjs`
 - `python tests/oracle.py`
 
 ## 8. What is not covered yet
 
-- Optimizer (predicate/projection pushdown): plans execute as written.
-- Budget / chunked execution: whole batch is materialized.
+- Chunked execution / spill: a plan is still materialized as one batch; `Budget`
+  bounds output size, not peak memory.
 - Arrow IPC / Parquet: only CSV / JSONL.
 - Cross-node minimal witness search: join evidence covers `max_fanout > 1`.
 - Browser workbench: only the JS build + CLI today.
+- Join predicate splitting, projection pruning and a cost model: the optimizer is
+  deliberately conservative.
 
 These are tracked in Issues #1–#3 and `docs/ROADMAP.md`; they are not claimed as done.

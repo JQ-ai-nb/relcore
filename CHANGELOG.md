@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.2.6 — 2026-10-26
+
+### Added
+
+- `examples/plan-edge-check.json` and `examples/edge-check.mjs`: the local/edge
+  scenario as a runnable entry, with inline data mounting and a check that source
+  rows never appear in the report (`source_rows_in_payload=false`).
+- README "整体表述" and "三个使用场景" sections; each scenario now has a command,
+  an exit code and expected output.
+- CI runs `node examples/edge-check.mjs`; CLI tests cover the edge plan (9 total).
+
+### Fixed
+
+- `docs/ACCEPTANCE.md` no longer claims the optimizer and budget are unimplemented,
+  and the test counts match the code.
+
 ## 0.2.5 — 2026-10-25
 
 ### Changed

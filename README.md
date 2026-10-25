@@ -1,13 +1,17 @@
 # Relcore
 
 [![CI](https://github.com/JQ-ai-nb/relcore/actions/workflows/ci.yml/badge.svg)](https://github.com/JQ-ai-nb/relcore/actions/workflows/ci.yml)
-[![Mooncakes](https://img.shields.io/badge/mooncakes-0.2.5-blue)](https://mooncakes.io/docs/JQ-ai-nb/relcore)
+[![Mooncakes](https://img.shields.io/badge/mooncakes-0.2.6-blue)](https://mooncakes.io/docs/JQ-ai-nb/relcore)
 
 **把任意表管道编译成可解释、可预算、可验证的执行计划。**
 
 Relcore 是 MoonBit 的**通用关系执行内核**：CSV / JSONL 进来，用同一套 plan IR 表达 `scan → filter → join → aggregate → sort → limit`，执行后每个节点都有精确基数；契约违约时给出可复核的最小行证据。
 
-> **v0.2.5 preview**：从 `JoinWitness`（单点等值关联预检）扩展而来。v0.1 只回答“这一对表 join 会不会扇出”；v0.2 回答“这条管道在哪一步、因为哪个键、扇出了多少行”。  
+**整体表述**（引用或转述时用这一段，与申报材料一致）：
+
+> Relcore 是 MoonBit 的通用关系执行内核。统一 JSON 计划 IR 支持 CSV / JSONL / 内存表，执行 scan、filter、project、join、aggregate、sort、limit、union、distinct 九类算子，输出结果表、每个节点的精确基数与契约结论；违约时给出最坏键、左右行号与完整行快照。它不是 DataFrame 门面，不是 SQL 引擎，也不是单表校验器，定位是可被其他 MoonBit 项目直接依赖的执行层。
+
+> **v0.2.6 preview**：从 `JoinWitness`（单点等值关联预检）扩展而来。v0.1 只回答“这一对表 join 会不会扇出”；v0.2 回答“这条管道在哪一步、因为哪个键、扇出了多少行”。  
 > 对初审意见的逐条回应（改了什么、证据在哪、什么还没做）见 [docs/REJECTION_RESPONSE.md](docs/REJECTION_RESPONSE.md)。
 
 ---
@@ -19,6 +23,7 @@ Relcore 是 MoonBit 的**通用关系执行内核**：CSV / JSONL 进来，用�
 3. 跑 `node bin/relcore.mjs examples/compare-tenant-keys.json`，看到 `first_divergence` 与 `retained/lost/gained`。
 4. 想看优化后的计划：`node bin/relcore.mjs examples/plan-revenue-by-segment.json --explain`。
 5. 想看实现分层：`docs/ARCHITECTURE.md`；想看与现有项目的关系：`docs/OVERLAP_AUDIT.md`；想看逐条回应：`docs/REJECTION_RESPONSE.md`。
+6. 想看真实用法：下面「三个使用场景」，每个场景都有命令、退出码和期望输出。
 
 ---
 
@@ -131,6 +136,67 @@ node bin/relcore.mjs examples/compare-tenant-keys.json
 
 ---
 
+## 三个使用场景
+
+三个场景各有可直接运行的入口，输出都是确定性的；命令在 `docs/ACCEPTANCE.md` 里也有。
+
+| 场景 | 谁用 | 入口 | 结果 |
+|---|---|---|---|
+| 管道重构回归 | 数据工程师 | `examples/compare-tenant-keys.json` | 7 → 5 行，保留 5、丢失 2，分叉在第 2 步 |
+| 多租户 join 扇出 | 平台 / 分析 | `examples/plan-tenant-fanout.json` | `many_to_many`、`max_fanout=2`、退出码 1 |
+| 本地 / 边缘校验 | 数据不能出机器的团队 | `examples/plan-edge-check.json`、`examples/edge-check.mjs` | 4 行、0 违约、源行不出现在输出里 |
+
+### 场景一：管道重构回归
+
+重构后总行数没变，实际匹配的行却换了一批——报表看不出来，`compare` 能。
+
+```sh
+node bin/relcore.mjs examples/compare-tenant-keys.json   # 退出 1
+```
+
+```json
+{
+  "ok": false,
+  "baseline_rows": 7,
+  "candidate_rows": 5,
+  "row_diff": { "retained": 5, "lost": 2, "gained": 0 },
+  "first_divergence": { "index": 2, "baseline_op": "join:inner", "candidate_op": "join:inner" }
+}
+```
+
+`retained / lost / gained` 按整行多重集计算，不是列级 diff；`index=2` 说明问题出在 join，而不是聚合。
+
+### 场景二：多租户 join 扇出
+
+`orders → customers` 少带了 `tenant`，5 行订单变成 7 行，金额悄悄翻倍。
+
+```sh
+node bin/relcore.mjs examples/plan-tenant-fanout.json --md   # 退出 1
+```
+
+期望看到 `join:inner` 的 `rows in=9 / rows out=7 / fanout=2 / cardinality=many_to_many`，以及 witness：
+
+```text
+worst_key=3:i:9|
+left_rows=3,4
+right_rows=2,3
+```
+
+把关联键换成 `customer + tenant` 再跑 `examples/plan-tenant-safe.json`：5 行、`max_fanout=1`、退出 0。
+
+### 场景三：本地 / 边缘校验
+
+数据不能上传时，同一份计划既能按路径读，也能把本地文件挂成内联数据；报告只含聚合与违约证据，不回显原始行。
+
+```sh
+node bin/relcore.mjs examples/plan-edge-check.json      # 退出 0，rows=4
+node scripts/build.mjs && node examples/edge-check.mjs   # 打印 source_rows_in_payload=false
+```
+
+`edge-check.mjs` 不 import 任何网络模块（`fetch` / `http` / `https` / `net`），并且逐个检查源文件里的 5 个 `order_id` 是否出现在报告中——结果为 `false`。当前提供 Node 与 WASM 目标；浏览器工作台在路线图。
+
+---
+
 ## 能力面
 
 | 层 | 已实现（v0.2 preview） | 计划中 |
@@ -229,12 +295,13 @@ moon test --target js --deny-warn     # 33 项
 moon fmt --check
 moon run examples/embed --deny-warn   # 库 API 消费者
 node scripts/build.mjs
-node --test tests/cli.test.mjs        # 8 项
+node --test tests/cli.test.mjs        # 9 项
+node examples/edge-check.mjs          # 内联数据、无网络、源行不外泄
 python tests/oracle.py                # 4 组 SQLite 差分校验
 ```
 
 - 33 项 MoonBit 测试：CSV 推断、filter/project、inner/left join、aggregate、union/distinct、JSON 计划、节点契约、join 证据、计划对比、错误路径；
-- 8 项 CLI 测试：示例退出码、Markdown、缺失文件、计划对比、预算错误、explain；
+- 9 项 CLI 测试：示例退出码、Markdown、缺失文件、计划对比、预算错误、explain、本地校验；
 - 4 组 SQLite 差分校验：fanout、组合键、按 segment 聚合、计划对比；
 - `examples/embed` 用公开 MoonBit API（不经过 JSON/CLI）跑同一管道，输出 `rows=3 violations=0`；
 - 所有后端 `moon check --deny-warn` 通过；`moon test` 在 wasm-gc 与 js 上通过；

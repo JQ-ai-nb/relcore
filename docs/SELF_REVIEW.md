@@ -140,3 +140,5 @@ node --test tests/cli.test.mjs
 
 - `0.2.3`：新增 `Budget { max_rows, max_join_rows }` 与 `BUDGET_EXCEEDED`；28 项 MoonBit + 7 项 CLI + 4 组 SQLite 校验；`examples/plan-budget.json` 退出码 2。
 - `0.2.4`：保守优化器（常量折叠/filter/limit 下推）与 `explain`；32 项 MoonBit + 8 项 CLI + 4 组 SQLite。
+
+- `0.2.6`：把三个使用场景做成可运行入口（新增 `examples/plan-edge-check.json`、`examples/edge-check.mjs`），README 增加“整体表述”与“三个使用场景”，修正 `ACCEPTANCE.md` 中已过期的“优化器/预算未实现”说法；33 MoonBit + 9 CLI + 4 SQLite 全过。
