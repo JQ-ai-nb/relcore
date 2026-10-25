@@ -43,4 +43,5 @@ jobs:
       - run: moon run examples/embed --deny-warn
       - run: node scripts/build.mjs
       - run: node --test tests/cli.test.mjs
+      - run: node examples/edge-check.mjs
       - run: python tests/oracle.py

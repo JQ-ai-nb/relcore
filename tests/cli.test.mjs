@@ -77,3 +77,13 @@ test('explain prints the optimized plan',()=>{
   assert.equal(result.status,0);
   assert.match(result.stdout,/(aggregate|join|scan)/);
 });
+
+test('local edge check passes and reports aggregates only',()=>{
+  const result=run('plan-edge-check.json');
+  assert.equal(result.status,0);
+  const report=JSON.parse(result.stdout);
+  assert.equal(report.ok,true);
+  assert.equal(report.rows,4);
+  assert.equal(report.stats.at(-1).op,'filter');
+  assert.equal(report.stats.at(-1).rows_out,4);
+});
